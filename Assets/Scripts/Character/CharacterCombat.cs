@@ -1,34 +1,42 @@
 using System;
 using UnityEngine;
 
-public class CharacterFighting : MonoBehaviour, IFigthtable
+public class CharacterCombat : MonoBehaviour, IFigthtable
 {
     [SerializeField] private Transform _attackTransform;
     [SerializeField] private LayerMask _enemyLayer;
     [SerializeField] private float _attackRadius;
-    private int _health;
-    public int Health 
-    { 
-        get => _health; 
-        set 
-        {
-            _health = value;
-            if (_health <= 0) Die();
-        } 
-    }
+    [SerializeField] private int _maxHealth = 100;
+    [SerializeField] private int _damage;
+    [SerializeField] private float _attackRate = 0.5f;
+
+    private float _nextAttackTime = 0f;
+    private int _currentHealth;
     private Animator _animator;
+
 
     private void Start()
     {
+        _currentHealth = _maxHealth;
         _animator = GetComponentInChildren<Animator>();
     }
 
     public void Attack()
     {
-        var enemies = Physics2D.OverlapCircleAll(_attackTransform.position, _attackRadius, _enemyLayer);
-        foreach(var enemy in enemies)
+        if (Time.time > _nextAttackTime) 
         {
-            Debug.Log(enemy.name);
+            AttackInternal();
+            _nextAttackTime = Time.time + _attackRate;
+        }
+    }
+
+    private void AttackInternal()
+    {
+        _animator.SetTrigger("Attack");
+        var enemies = Physics2D.OverlapCircleAll(_attackTransform.position, _attackRadius, _enemyLayer);
+        foreach (var enemy in enemies)
+        {
+            enemy.GetComponent<IEnemy>().TakeDamage(_damage);
         }
     }
 
@@ -43,7 +51,11 @@ public class CharacterFighting : MonoBehaviour, IFigthtable
         if (damage < 0) 
             throw new ArgumentException($"The object({gameObject.name} can't take negative damage");
 
-        Health -= damage;
+        _animator.SetTrigger("Hurt");
+        _currentHealth -= damage;
+
+        if (_currentHealth <= 0)
+            Die();
     }
 
     private void OnDrawGizmosSelected()

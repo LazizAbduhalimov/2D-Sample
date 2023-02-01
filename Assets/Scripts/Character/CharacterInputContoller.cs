@@ -12,6 +12,7 @@ public class CharacterInputContoller : MonoBehaviour
         {
             throw new MissingComponentException($"There is no IControlable in {gameObject.name}");
         }
+        
     }
 
     private void Update()
@@ -29,7 +30,7 @@ public class CharacterInputContoller : MonoBehaviour
         }
         if (Input.GetButtonDown("Fire1"))
         {
-            
+            _figthtable?.Attack();
         }
     }
 }
