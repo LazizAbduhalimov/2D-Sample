@@ -1,4 +1,6 @@
+using System;
 using UnityEngine;
+
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class CharacterMovement : MonoBehaviour, IControlable
@@ -17,12 +19,14 @@ public class CharacterMovement : MonoBehaviour, IControlable
     private int _jumpsRemained;
     private bool _grounded;
     private const float G = 9.81f;
-
     public float Acceleration { get { return (2 * _jumpHeight) / (_jumpLiftingDuration * _jumpLiftingDuration); } }
+
+    private Animator _animator;
 
     private void Start()
     {
         _rb = GetComponent<Rigidbody2D>();
+        _animator = GetComponentInChildren<Animator>();
     }
 
     private void FixedUpdate()
@@ -32,7 +36,17 @@ public class CharacterMovement : MonoBehaviour, IControlable
 
     public void Move(Vector2 direction)
     {
+        _animator.SetFloat("Speed", Mathf.Abs(direction.x));
         _moveVelocity = direction * _moveSpeed;
+        Flip(direction.x);
+    }
+
+    private void Flip(float xDirection)
+    {
+        if (xDirection > 0)
+            transform.localScale = new Vector3(-1f, 1f, 1f);
+        else if(xDirection < 0)
+            transform.localScale = new Vector3(1f, 1f, 1f);
     }
 
     private void MoveInternal()
@@ -44,6 +58,7 @@ public class CharacterMovement : MonoBehaviour, IControlable
     {
         if(_grounded || _jumpsRemained > 0)
         {
+            _animator.SetTrigger("Jump");
             _grounded = false;
             _jumpsRemained--;
             float jumpSpeed = Mathf.Sqrt(2 * _jumpHeight * Acceleration);
@@ -51,12 +66,7 @@ public class CharacterMovement : MonoBehaviour, IControlable
             _rb.velocity = new Vector2(_rb.velocity.x, jumpSpeed);
         }
     }
-    public void JumpStop()
-    {
-        Debug.Log("Jump stop");
-        if (_rb.velocity.y > 0) 
-            _rb.velocity = new Vector2(_rb.velocity.x, 0f);
-    }
+    public void JumpStop(){}
 
     private void OnCollisionStay2D(Collision2D collision)
     {
@@ -67,6 +77,7 @@ public class CharacterMovement : MonoBehaviour, IControlable
     private bool IsOnTheGround()
     {
         bool isOnTheground = Physics2D.OverlapCircle(_groundCheckTransform.position, _groundCheckRange, _groundMask);
+        _animator.SetBool("Grounded", isOnTheground);
         if (isOnTheground)
             _jumpsRemained = _extraJumps;
         return isOnTheground;
@@ -78,7 +89,7 @@ public class CharacterMovement : MonoBehaviour, IControlable
         {
             _rb = GetComponent<Rigidbody2D>();
         }
-        Renderer renderer = GetComponent<Renderer>();
+        Renderer renderer = GetComponentInChildren<Renderer>();
         float yBound = renderer.bounds.extents.y;
 
         Gizmos.color = Color.yellow;
